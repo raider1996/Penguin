@@ -17,9 +17,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -38,7 +36,7 @@ public class FirstScreen implements Screen {
     OrthogonalTiledMapRenderer renderer;
     OrthographicCamera camera;
 
-    int loops = 0;
+
 
     SpriteBatch spriteBatch;
     Viewport viewport;
@@ -56,6 +54,11 @@ public class FirstScreen implements Screen {
 
     Texture texture2;
     Sprite sprite;
+
+    Texture textureT;
+    Sprite spriteT;
+    Texture textureB;
+    Sprite spriteB;
 
     int waterTile1X;
     int waterTile1Y;
@@ -81,10 +84,15 @@ public class FirstScreen implements Screen {
         texture2 = new Texture("water.png");
         sprite = new Sprite(texture2);
 
+        textureT = new Texture("Top.png");
+        spriteT = new Sprite(textureT);
+        textureB = new Texture("Bottom.png");
+        spriteB = new Sprite(textureB);
+
         //random location but not 1,1
         do {
             waterTile1X = (int)(Math.random()*3);
-            waterTile1Y = (int)(Math.random()*3);
+            waterTile1Y = 1+(int)(Math.random()*3);
         } while (waterTile1X == 1 && waterTile1Y == 1);
 
       //water tile 2 logic random location not near first water
@@ -92,7 +100,7 @@ public class FirstScreen implements Screen {
         float distanceFromTile1 = 0;
         do{
             waterTile2X = (int)(Math.random()*3);
-            waterTile2Y = (int)(Math.random()*3);
+            waterTile2Y = 1+(int)(Math.random()*3);
             distanceFromTile1 = ((waterTile2X - waterTile1X) * (waterTile2X - waterTile1X)) +
                 ((waterTile2Y - waterTile1Y) * (waterTile2Y - waterTile1Y));
 
@@ -103,17 +111,17 @@ public class FirstScreen implements Screen {
         boolean conditionToPlaceCharacter = false;
         do {
             pingu1.x = 1+(int)(Math.random()*3);
-            pingu1.y = (int)(Math.random()*3);
+            pingu1.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
                 (pingu1.x-1 != waterTile1X || pingu1.y != waterTile1Y) &&
                     (pingu1.x-1 != waterTile2X || pingu1.y != waterTile2Y);
-
+            Gdx.app.log("Pingu1", pingu1.x + " " + pingu1.y);
         } while (!conditionToPlaceCharacter);
         // Not on waterTile1 and not on waterTile2
 
         do {
             pingu2.x = 1+(int)(Math.random()*3);
-            pingu2.y = (int)(Math.random()*3);
+            pingu2.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
                 (pingu2.x-1 != waterTile1X || pingu2.y != waterTile1Y) &&
                     (pingu2.x-1 != waterTile2X || pingu2.y != waterTile2Y) &&
@@ -124,7 +132,7 @@ public class FirstScreen implements Screen {
 
         do {
             pingu3.x = (int)(Math.random()*3) + 1;
-            pingu3.y = (int)(Math.random()*3);
+            pingu3.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
                 (pingu3.x - 1 != waterTile1X || pingu3.y != waterTile1Y) &&
                     (pingu3.x - 1 != waterTile2X || pingu3.y != waterTile2Y) &&
@@ -145,10 +153,13 @@ public class FirstScreen implements Screen {
         //set map ice and red
         spriteBatch = new SpriteBatch();
 //        viewport = new StretchViewport(3,3);
-        viewport = new FitViewport(3,3);
+        viewport = new FitViewport(3,5);
         // Try things:
-        // 1. Extend the world dimensions to add a bottom and top
-        // 2.
+        // 1. Extend the world dimensions to add a bottom and top row
+        // 2. Change the way the coordinates work in the map
+        // 3. Change the hashmap
+        // 4. Change the movement
+        // 5. Change the placement of the pingu
 
         map = new TmxMapLoader().load("map.tmx");
         Map2 = new TmxMapLoader().load("MapRed.tmx");
@@ -161,63 +172,63 @@ public class FirstScreen implements Screen {
 
         hashMap = new HashMap<>();
         ArrayList<Integer> x1y2al = new ArrayList<>();
+        x1y2al.add(23);
         x1y2al.add(22);
-        x1y2al.add(21);
-        x1y2al.add(11);
-        hashMap.put(12, x1y2al);
+        x1y2al.add(12);
+        hashMap.put(13, x1y2al);
         ArrayList<Integer> x2y1al = new ArrayList<>();
+        x2y1al.add(13);
+        x2y1al.add(23);
+        x2y1al.add(33);
         x2y1al.add(12);
-        x2y1al.add(22);
         x2y1al.add(32);
         x2y1al.add(11);
+        x2y1al.add(21);
         x2y1al.add(31);
-        x2y1al.add(10);
-        x2y1al.add(20);
-        x2y1al.add(30);
-        hashMap.put(21, x2y1al);
+        hashMap.put(22, x2y1al);
         ArrayList<Integer> x2y2al=new ArrayList<>();
+        x2y2al.add(13);
         x2y2al.add(12);
-        x2y2al.add(11);
-        x2y2al.add(21);
-        x2y2al.add(31);
+        x2y2al.add(22);
         x2y2al.add(32);
-        hashMap.put(22, x2y2al);
+        x2y2al.add(33);
+        hashMap.put(23, x2y2al);
         ArrayList<Integer> x3y2al=new ArrayList<>();
+        x3y2al.add(23);
         x3y2al.add(22);
-        x3y2al.add(21);
-        x3y2al.add(31);
-        hashMap.put(32, x3y2al);
+        x3y2al.add(32);
+        hashMap.put(33, x3y2al);
         ArrayList<Integer> x1y1al=new ArrayList<>();
-        x1y1al.add(12);
+        x1y1al.add(13);
+        x1y1al.add(23);
         x1y1al.add(22);
         x1y1al.add(21);
-        x1y1al.add(20);
-        x1y1al.add(10);
-        hashMap.put(11, x1y1al);
+        x1y1al.add(11);
+        hashMap.put(12, x1y1al);
         ArrayList<Integer> x3y1al=new ArrayList<>();
-        x3y1al.add(32);
+        x3y1al.add(33);
+        x3y1al.add(23);
         x3y1al.add(22);
         x3y1al.add(21);
-        x3y1al.add(20);
-        x3y1al.add(30);
-        hashMap.put(31, x3y1al);
+        x3y1al.add(31);
+        hashMap.put(33, x3y1al);
         ArrayList<Integer> x1y0al=new ArrayList<>();
-        x1y0al.add(11);
+        x1y0al.add(12);
+        x1y0al.add(22);
         x1y0al.add(21);
-        x1y0al.add(20);
-        hashMap.put(10, x1y0al);
+        hashMap.put(11, x1y0al);
         ArrayList<Integer> x2y0al=new ArrayList<>();
-        x2y0al.add(10);
         x2y0al.add(11);
-        x2y0al.add(21);
+        x2y0al.add(12);
+        x2y0al.add(22);
+        x2y0al.add(32);
         x2y0al.add(31);
-        x2y0al.add(30);
-        hashMap.put(20, x2y0al);
+        hashMap.put(21, x2y0al);
         ArrayList<Integer> x3y0al=new ArrayList<>();
-        x3y0al.add(20);
         x3y0al.add(21);
-        x3y0al.add(31);
-        hashMap.put(30, x3y0al);
+        x3y0al.add(22);
+        x3y0al.add(32);
+        hashMap.put(31, x3y0al);
     }
 
     @Override
@@ -256,7 +267,8 @@ public class FirstScreen implements Screen {
                 //Gdx.app.log("Coordinates", pingu2.x + " " + pingu2.y + ", " + x + " " + y);
                 continue;
             }
-            TiledMapTileLayer.Cell cell = layer.getCell(x,y);
+            // Something is off with the red cells
+            TiledMapTileLayer.Cell cell = layer.getCell(x,y-1); // Removed 1
             TextureRegion textureRegion = cell.getTile().getTextureRegion();
             spriteBatch.draw(textureRegion, x, y, 1, 1);
         }
@@ -266,11 +278,12 @@ public class FirstScreen implements Screen {
         spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
         //above for water tile
 
+        spriteBatch.draw(textureT,0,4, 3, 1);
+        spriteBatch.draw(textureB,0,0, 3, 1);
         spriteBatch.draw(pingu1.sprite,pingu1.x,pingu1.y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(pingu2.sprite,pingu2.x,pingu2.y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(pingu3.sprite,pingu3.x,pingu3.y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.end();
-//        loops++;
     }
 
     private void logic()
@@ -294,7 +307,7 @@ public class FirstScreen implements Screen {
                 }
                 // TODO add pingu3
                 pingu1.x = (touchPosition.x);
-                pingu1.y = (touchPosition.y);
+                pingu1.y = (touchPosition.y+1);
             }
 
             // get the arraylist that matches the position
