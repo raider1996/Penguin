@@ -76,10 +76,10 @@ public class FirstScreen implements Screen {
 
         // Local player will always be pingu1
         // We may have different coordinates and different textures
-        pingu1 = new Pingu(1, 2, "pingured.png");
+        pingu1 = new Pingu(1, 3, "pingured.png");
 //        Gdx.app.log("Show", pingu1.x + " " + pingu1.y);
-        pingu2 = new Pingu(3,2, "pinguyellow.png");
-        pingu3 = new Pingu(3,0,"pingupurple.png");
+        pingu2 = new Pingu(3,3, "pinguyellow.png");
+        pingu3 = new Pingu(3,1,"pingupurple.png");
 
         texture2 = new Texture("water.png");
         sprite = new Sprite(texture2);
@@ -131,7 +131,7 @@ public class FirstScreen implements Screen {
 
 
         do {
-            pingu3.x = (int)(Math.random()*3) + 1;
+            pingu3.x = 1+(int)(Math.random()*3);
             pingu3.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
                 (pingu3.x - 1 != waterTile1X || pingu3.y != waterTile1Y) &&
@@ -171,64 +171,64 @@ public class FirstScreen implements Screen {
         renderer.setView(camera);
 
         hashMap = new HashMap<>();
-        ArrayList<Integer> x1y2al = new ArrayList<>();
+        ArrayList<Integer> x1y3al = new ArrayList<>();
+        x1y3al.add(23);
+        x1y3al.add(22);
+        x1y3al.add(12);
+        hashMap.put(13, x1y3al);
+        ArrayList<Integer> x2y2al = new ArrayList<>();
+        x2y2al.add(13);
+        x2y2al.add(23);
+        x2y2al.add(33);
+        x2y2al.add(12);
+        x2y2al.add(32);
+        x2y2al.add(11);
+        x2y2al.add(21);
+        x2y2al.add(31);
+        hashMap.put(22, x2y2al);
+        ArrayList<Integer> x2y3al=new ArrayList<>();
+        x2y3al.add(13);
+        x2y3al.add(12);
+        x2y3al.add(22);
+        x2y3al.add(32);
+        x2y3al.add(33);
+        hashMap.put(23, x2y3al);
+        ArrayList<Integer> x3y3al=new ArrayList<>();
+        x3y3al.add(23);
+        x3y3al.add(22);
+        x3y3al.add(32);
+        hashMap.put(33, x3y3al);
+        ArrayList<Integer> x1y2al=new ArrayList<>();
+        x1y2al.add(13);
         x1y2al.add(23);
         x1y2al.add(22);
-        x1y2al.add(12);
-        hashMap.put(13, x1y2al);
-        ArrayList<Integer> x2y1al = new ArrayList<>();
-        x2y1al.add(13);
-        x2y1al.add(23);
-        x2y1al.add(33);
-        x2y1al.add(12);
-        x2y1al.add(32);
-        x2y1al.add(11);
-        x2y1al.add(21);
-        x2y1al.add(31);
-        hashMap.put(22, x2y1al);
-        ArrayList<Integer> x2y2al=new ArrayList<>();
-        x2y2al.add(13);
-        x2y2al.add(12);
-        x2y2al.add(22);
-        x2y2al.add(32);
-        x2y2al.add(33);
-        hashMap.put(23, x2y2al);
+        x1y2al.add(21);
+        x1y2al.add(11);
+        hashMap.put(12, x1y2al);
         ArrayList<Integer> x3y2al=new ArrayList<>();
+        x3y2al.add(33);
         x3y2al.add(23);
         x3y2al.add(22);
-        x3y2al.add(32);
-        hashMap.put(33, x3y2al);
+        x3y2al.add(21);
+        x3y2al.add(31);
+        hashMap.put(32, x3y2al);
         ArrayList<Integer> x1y1al=new ArrayList<>();
-        x1y1al.add(13);
-        x1y1al.add(23);
+        x1y1al.add(12);
         x1y1al.add(22);
         x1y1al.add(21);
-        x1y1al.add(11);
-        hashMap.put(12, x1y1al);
+        hashMap.put(11, x1y1al);
+        ArrayList<Integer> x2y1al=new ArrayList<>();
+        x2y1al.add(11);
+        x2y1al.add(12);
+        x2y1al.add(22);
+        x2y1al.add(32);
+        x2y1al.add(31);
+        hashMap.put(21, x2y1al);
         ArrayList<Integer> x3y1al=new ArrayList<>();
-        x3y1al.add(33);
-        x3y1al.add(23);
-        x3y1al.add(22);
         x3y1al.add(21);
-        x3y1al.add(31);
-        hashMap.put(33, x3y1al);
-        ArrayList<Integer> x1y0al=new ArrayList<>();
-        x1y0al.add(12);
-        x1y0al.add(22);
-        x1y0al.add(21);
-        hashMap.put(11, x1y0al);
-        ArrayList<Integer> x2y0al=new ArrayList<>();
-        x2y0al.add(11);
-        x2y0al.add(12);
-        x2y0al.add(22);
-        x2y0al.add(32);
-        x2y0al.add(31);
-        hashMap.put(21, x2y0al);
-        ArrayList<Integer> x3y0al=new ArrayList<>();
-        x3y0al.add(21);
-        x3y0al.add(22);
-        x3y0al.add(32);
-        hashMap.put(31, x3y0al);
+        x3y1al.add(22);
+        x3y1al.add(32);
+        hashMap.put(31, x3y1al);
     }
 
     @Override
@@ -307,7 +307,7 @@ public class FirstScreen implements Screen {
                 }
                 // TODO add pingu3
                 pingu1.x = (touchPosition.x);
-                pingu1.y = (touchPosition.y+1);
+                pingu1.y = (touchPosition.y);
             }
 
             // get the arraylist that matches the position
