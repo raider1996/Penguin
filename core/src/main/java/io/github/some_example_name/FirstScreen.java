@@ -15,15 +15,28 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
 
 
-//import javax.swing.Renderer;
+
+//imposter does not go in water
+// show who the imposter is
+
+//set up online system
 
 
 /** First screen of the application. Displayed after the application is created. */
@@ -36,7 +49,7 @@ public class FirstScreen implements Screen {
     OrthogonalTiledMapRenderer renderer;
     OrthographicCamera camera;
 
-
+    boolean isSelected = false;
 
     SpriteBatch spriteBatch;
     Viewport viewport;
@@ -46,11 +59,7 @@ public class FirstScreen implements Screen {
 
     boolean isTouched = false;
     Vector2 touchPosition = new Vector2();
-
-    Pingu pingu1;
-    Pingu pingu2;
-    Pingu pingu3;
-
+    boolean isMovementActive = true;
 
     Texture texture2;
     Sprite sprite;
@@ -59,6 +68,8 @@ public class FirstScreen implements Screen {
     Sprite spriteT;
     Texture textureB;
     Sprite spriteB;
+    Texture textureRing;
+    Sprite spriteRing;
 
     int waterTile1X;
     int waterTile1Y;
@@ -66,20 +77,86 @@ public class FirstScreen implements Screen {
     int waterTile2X;
     int waterTile2Y;
 
+    int counter;
+    float timeSinceLastMovement = 0;
+
+    Stage stage;
+    ProgressBar progressBar;
+    Button button;
+
+    Pingu[]penguin;
 
     HashMap<Integer, ArrayList<Integer>> hashMap;
 
+    Main game;
+
+    public FirstScreen(Main main) {
+        game = main;
+    }
+
 
     @Override
-    public void show() {
+    public void show()
+    {
         // Prepare your screen here.
 
-        // Local player will always be pingu1
+        stage = new Stage(new ScreenViewport());
+//        Gdx.input.setInputProcessor(stage);
+        Texture BackgroundTexture = new Texture(Gdx.files.internal("progressbar.png"));
+        Texture KnobTexture =  new Texture(Gdx.files.internal("progressbarknob.png"));
+
+        ProgressBar.ProgressBarStyle Style = new ProgressBar.ProgressBarStyle();
+        Style.background = new TextureRegionDrawable(BackgroundTexture);
+        Style.knob = new TextureRegionDrawable(KnobTexture);
+
+        Style.knobBefore = new TextureRegionDrawable(KnobTexture);
+
+        progressBar= new ProgressBar(1,20,1,false,Style);
+
+        progressBar.setValue(0);
+
+        Table table = new Table();
+//        table.setFillParent(true);
+        table.add(progressBar).width(652).height(134);
+        table.setPosition(550.0F, 2150.0F);
+        stage.addActor(table);
+
+        Button.ButtonStyle bstyle = new Button.ButtonStyle();
+        Texture ButtonTexture = new Texture(Gdx.files.internal("button.png"));
+        Texture ButtonPressTexture = new Texture(Gdx.files.internal("buttonpressed.png"));
+        // Create texture for buttonpressed
+        // get a drawable for both
+        // >> use it for up and down
+        bstyle.up = new TextureRegionDrawable(ButtonTexture);
+        bstyle.down = new TextureRegionDrawable(ButtonPressTexture);
+        // new button
+
+        button = new Button(bstyle);
+        button.setPosition(365f, 10f);
+        button.setSize(350,440);
+        stage.addActor(button);
+
+        button.addListener(new ChangeListener()
+        {
+            @Override
+            public void changed(ChangeEvent event, Actor actor)
+            {
+                //
+            }
+        });
+
+        // add button to stage
+
+        // Local player will always be pingu1, penguin[0]
         // We may have different coordinates and different textures
-        pingu1 = new Pingu(1, 3, "pingured.png");
+        Pingu pingu1 = new Pingu(1, 3,1, "pingured.png");
 //        Gdx.app.log("Show", pingu1.x + " " + pingu1.y);
-        pingu2 = new Pingu(3,3, "pinguyellow.png");
-        pingu3 = new Pingu(3,1,"pingupurple.png");
+        Pingu pingu2 = new Pingu(3,3,2, "pinguyellow.png");
+        Pingu pingu3 = new Pingu(3,1,3,"pingupurple.png");
+
+        //pingu array
+        penguin = new Pingu[]{pingu1, pingu2, pingu3};
+        penguin[(int)(Math.random()*3)].isImpostor = true;
 
         texture2 = new Texture("water.png");
         sprite = new Sprite(texture2);
@@ -88,17 +165,21 @@ public class FirstScreen implements Screen {
         spriteT = new Sprite(textureT);
         textureB = new Texture("Bottom.png");
         spriteB = new Sprite(textureB);
+        textureRing = new Texture("circle.png");
+        spriteRing = new Sprite(textureRing);
 
         //random location but not 1,1
-        do {
+        do
+        {
             waterTile1X = (int)(Math.random()*3);
             waterTile1Y = 1+(int)(Math.random()*3);
         } while (waterTile1X == 1 && waterTile1Y == 1);
 
       //water tile 2 logic random location not near first water
 
-        float distanceFromTile1 = 0;
-        do{
+        float distanceFromTile1;
+        do
+        {
             waterTile2X = (int)(Math.random()*3);
             waterTile2Y = 1+(int)(Math.random()*3);
             distanceFromTile1 = ((waterTile2X - waterTile1X) * (waterTile2X - waterTile1X)) +
@@ -108,8 +189,9 @@ public class FirstScreen implements Screen {
 
         //random pingu location not on the water or on each other
 
-        boolean conditionToPlaceCharacter = false;
-        do {
+        boolean conditionToPlaceCharacter;
+        do
+        {
             pingu1.x = 1+(int)(Math.random()*3);
             pingu1.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
@@ -119,7 +201,8 @@ public class FirstScreen implements Screen {
         } while (!conditionToPlaceCharacter);
         // Not on waterTile1 and not on waterTile2
 
-        do {
+        do
+        {
             pingu2.x = 1+(int)(Math.random()*3);
             pingu2.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
@@ -130,7 +213,8 @@ public class FirstScreen implements Screen {
         } while (!conditionToPlaceCharacter); // Not on waterTile1 and not on waterTile2 and not on pingu1
 
 
-        do {
+        do
+        {
             pingu3.x = 1+(int)(Math.random()*3);
             pingu3.y = 1+(int)(Math.random()*3);
             conditionToPlaceCharacter =
@@ -232,46 +316,84 @@ public class FirstScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
+    public void render(float delta)
+    {
         // Draw your screen here. "delta" is the time since last render in seconds.
         input();
         logic();
         draw();
     }
 
-    private void draw(){
+    private void draw()
+    {
         ScreenUtils.clear(new Color(Color.BLACK),true);
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
+        // Drawing the blue map
         renderer.render();
         TiledMapTileLayer layer = (TiledMapTileLayer) Map2.getLayers().get(0);
 
 
+        spriteBatch.begin();
         // can we get a tile from the map? <- write the documentation
         // can we draw one individual cell? <- get the TextureRegion, then paint?
         // Based on pingu's position, get the arraylist
         // for all the elements in arraylist, paint the matching cell
-        int pingu_X = pingu1.x;
-        int pingu_Y = pingu1.y;
-        spriteBatch.begin();
+        // Drawing the red tiles
+        if (isMovementActive)
+        {
+            int pingu_X = penguin[0].x;
+            int pingu_Y = penguin[0].y;
 //        Gdx.app.log("draw", pingu1.x * 10 + pingu1.y + "");
-        for (int coordinates: hashMap.get(pingu_X * 10 + pingu_Y)) {
-            int x = (coordinates/10) - 1;
-            int y = coordinates%10;
-//            Gdx.app.log("Coordinates" + loops, pingu2.x + " " + pingu2.y + ", " + x + " " + y);
-            if (pingu2.x == x + 1 && pingu2.y == y) {
-               //Gdx.app.log("Coordinates", pingu2.x + " " + pingu2.y + ", " + x + " " + y);
-                continue;
+            // TODO: Check the coordinates are valid
+            if (!hashMap.containsKey(pingu_X * 10 + pingu_Y))
+            {
+                Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
             }
-            if (pingu3.x == x + 1 && pingu3.y == y) {
-                //Gdx.app.log("Coordinates", pingu2.x + " " + pingu2.y + ", " + x + " " + y);
-                continue;
+            for (int coordinates : hashMap.get(pingu_X * 10 + pingu_Y))
+            {
+                int x = (coordinates / 10) - 1;
+                int y = coordinates % 10;
+                if (penguin[1].x == x + 1 && penguin[1].y == y)
+                {
+                    continue;
+                }
+                if (penguin[2].x == x + 1 && penguin[2].y == y)
+                {
+                    continue;
+                }
+                TiledMapTileLayer.Cell cell = layer.getCell(x, y - 1); // Removed 1
+                TextureRegion textureRegion = cell.getTile().getTextureRegion();
+                spriteBatch.draw(textureRegion, x, y, 1, 1);
             }
-            // Something is off with the red cells
-            TiledMapTileLayer.Cell cell = layer.getCell(x,y-1); // Removed 1
-            TextureRegion textureRegion = cell.getTile().getTextureRegion();
-            spriteBatch.draw(textureRegion, x, y, 1, 1);
         }
+//               // if (isselected = true)
+//               {
+                    //draw button down
+////                  if (penguin[1].isImpostor)
+////                  {
+                            //win
+                            //game.switchToGameOverScreen(true);
+////                  }
+////                  if (penguin[2].isImpostor)
+////                  {
+                           //win
+////                      game.switchToGameOverScreen(true);
+////                  }
+////                  else
+////                  {
+                            //lose
+////                      game.switchToGameOverScreen(false);
+////                  }
+////                }
+//
+//                //if button is pressed by touch screen get button location and pingu is touched
+//                //if imposter win
+//                // else you lose
+//
+//
+            //}
+//        }
 
 
         spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
@@ -280,34 +402,71 @@ public class FirstScreen implements Screen {
 
         spriteBatch.draw(textureT,0,4, 3, 1);
         spriteBatch.draw(textureB,0,0, 3, 1);
-        spriteBatch.draw(pingu1.sprite,pingu1.x,pingu1.y,0,0,8,8,0.1f,0.1f,90,true);
-        spriteBatch.draw(pingu2.sprite,pingu2.x,pingu2.y,0,0,8,8,0.1f,0.1f,90,true);
-        spriteBatch.draw(pingu3.sprite,pingu3.x,pingu3.y,0,0,8,8,0.1f,0.1f,90,true);
+        spriteBatch.draw(penguin[0].sprite,penguin[0].x,penguin[0].y,0,0,8,8,0.1f,0.1f,90,true);
+        spriteBatch.draw(penguin[1].sprite,penguin[1].x,penguin[1].y,0,0,8,8,0.1f,0.1f,90,true);
+        spriteBatch.draw(penguin[2].sprite,penguin[2].x,penguin[2].y,0,0,8,8,0.1f,0.1f,90,true);
+
+        for (int i = 0; i < 3; i++) {
+            if (penguin[i].isSelected)
+            {
+                // draw ring texture
+                spriteBatch.draw(textureRing,penguin[i].x-1,penguin[i].y,1,1);
+            }
+        }
+
+
         spriteBatch.end();
+
+
+        progressBar.setValue(counter);
+        //counter is 20 not 2
+        if(counter == 20)
+        {
+          music.pause();
+          isMovementActive = false;
+        }
+
+        stage.act(Gdx.graphics.getDeltaTime());
+//        progressBar.setValue(100f);
+        stage.draw();
     }
 
     private void logic()
     {
-        int pingu_X = pingu1.x;
-        int pingu_Y = pingu1.y;
-        //Vector2 pingu_pos = new Vector2(pingu_X, pingu_Y);
+        int pingu_X = penguin[0].x;
+        int pingu_Y = penguin[0].y;
+
+        // Keep track of deltatime since lastmove
+        timeSinceLastMovement += Gdx.graphics.getDeltaTime();
+//
 
 
-        if (isTouched)
+        if (isTouched && isMovementActive)
         {
             // Can I move there?
             // Add
-            if (hashMap.get(10 * pingu_X + pingu_Y).contains(touchPosition.x * 10 + touchPosition.y))
+            if (hashMap.get(10 * pingu_X + pingu_Y).contains(touchPosition.x * 10 + touchPosition.y + 1))
             {
-                if (touchPosition.x == pingu2.x && touchPosition.y == pingu2.y) {
+                if (touchPosition.x == penguin[1].x && touchPosition.y == penguin[1].y - 1)
+                {
+                    Gdx.app.log("logic", "on top of pingu 2");
                     return;
                 }
-                if (touchPosition.x == pingu3.x && touchPosition.y == pingu3.y) {
+                if (touchPosition.x == penguin[2].x && touchPosition.y == penguin[2].y - 1)
+                {
+                    Gdx.app.log("logic", "on top of pingu 3");
                     return;
                 }
-                // TODO add pingu3
-                pingu1.x = (touchPosition.x);
-                pingu1.y = (touchPosition.y);
+                penguin[0].x = (touchPosition.x);
+                penguin[0].y = (touchPosition.y)+1;
+
+                //add to progress bar is touched under 2 seconds
+                //reset the timer
+                if (timeSinceLastMovement < 2.0 && counter < 20)
+                {
+                    counter++;
+                }
+                timeSinceLastMovement = 0;
             }
 
             // get the arraylist that matches the position
@@ -315,32 +474,85 @@ public class FirstScreen implements Screen {
             // else paint it blue
 
         }
+        if (!isMovementActive && isTouched && !penguin[0].isImpostor)
+        {
+            // Unselect all the pingus
+            if (!(touchPosition.x == 2 && touchPosition.y == 0)) {
+                for (int i = 0; i < 3; i++) {
+                    penguin[i].isSelected = false;
+                }
+            }
+            // We want to know if pingu2 or pingu3 were selected
+            if (penguin[1].x == (touchPosition.x) && penguin[1].y == (touchPosition.y)+1)
+            {
+                penguin[1].isSelected = true;
+            }
+            if (penguin[2].x == (touchPosition.x) && penguin[2].y == (touchPosition.y)+1)
+            {
+                penguin[2].isSelected =true;
+            }
+
+            // If the touch position is that of the button
+            if (touchPosition.x == 2 && touchPosition.y == 0) {
+                Gdx.app.log("BUTTON", "PRESSED!");
+                int selectedPingu = -1;
+                for (int i = 0; i < 3; i++) {
+                    if (penguin[i].isSelected) {
+                        selectedPingu = i;
+//                        break;
+                    }
+                }
+                if (selectedPingu != -1) {
+                    game.switchToGameOverScreen(penguin[selectedPingu].isImpostor);
+                }
+            }
+
+            // youWon = selectedPingu.isimpostor
+            // switch to game over with the boolean
+//            if ()
+
+        }
+
+
     }
 
-    private void input() {
-        if (Gdx.input.isTouched()) {
+    private void input()
+    {
+        if (Gdx.input.isTouched())
+        {
             Gdx.app.log("input", Gdx.input.getX() + " " + Gdx.input.getY());
             isTouched = true;
             touchPosition = convertPixelsToTileCoordinates(Gdx.input.getX(), Gdx.input.getY());
             Gdx.app.log("input", touchPosition.x + " " + touchPosition.y);
-        } else {
+        } else
+        {
             isTouched = false;
         }
     }
 
-    static class Vector2 {
+    /*
+    1,2 2,2 3,2
+    1,1 2,1 3,1
+    1,0 2,0 3,0
+     */
+
+
+    static class Vector2
+    {
         //Vector2(int x, int y) {this.x = x; this.y = y;}
         public int x;
         public int y;
 
-        public Vector2() {
+        public Vector2()
+        {
 
         }
     }
 
     // Assume x and y are valid
     // input: x and y are pixel coordinates
-    private Vector2 convertPixelsToTileCoordinates(float x, float y) {
+    private Vector2 convertPixelsToTileCoordinates(float x, float y)
+    {
         Vector2 vector2 = new Vector2();
         vector2.x = (int) (x/((float) width /3)+1);
         vector2.y = (int) (3-(y-((float) height- (float)width) /2)/360);
@@ -348,30 +560,37 @@ public class FirstScreen implements Screen {
     }
 
     @Override
-    public void resize(int width, int height) {
+    public void resize(int width, int height)
+    {
         viewport.update(width,height,true);//centers the camera
         // Resize your screen here. The parameters represent the new window size.
         this.width = width;
         this.height = height;
+        stage.getViewport().update(width,height,true);
     }
 
     @Override
-    public void pause() {
+    public void pause()
+    {
         // Invoked when your application is paused.
     }
 
     @Override
-    public void resume() {
+    public void resume()
+    {
         // Invoked when your application is resumed after pause.
     }
 
     @Override
-    public void hide() {
+    public void hide()
+    {
         // This method is called when another screen replaces this one.
     }
 
     @Override
-    public void dispose() {
+    public void dispose()
+    {
         // Destroy screen's assets here.
+        stage.dispose();
     }
 }
