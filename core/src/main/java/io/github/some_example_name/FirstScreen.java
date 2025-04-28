@@ -27,6 +27,11 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -34,10 +39,11 @@ import java.util.HashMap;
 
 
 //imposter does not go in water
-// show who the imposter is
 
-//set up online system
 
+
+//render screen with server
+// show move players
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -49,7 +55,7 @@ public class FirstScreen implements Screen {
     OrthogonalTiledMapRenderer renderer;
     OrthographicCamera camera;
 
-    boolean isSelected = false;
+    //boolean isSelected = false;
 
     SpriteBatch spriteBatch;
     Viewport viewport;
@@ -90,6 +96,8 @@ public class FirstScreen implements Screen {
 
     Main game;
 
+    boolean gameStarted = false;
+
     public FirstScreen(Main main) {
         game = main;
     }
@@ -97,13 +105,70 @@ public class FirstScreen implements Screen {
 
     @Override
     public void show()
-    {
+    {   //server
+
+        final String SERVER_IP = "152.105.66.107";  // Server IP
+        final int SERVER_PORT = 4300;
+
+        new Thread(()-> {
+            try (Socket clientSocket = new Socket(InetAddress.getByName(SERVER_IP), SERVER_PORT);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+
+
+                System.out.println("Connected to server!");
+                //Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
+                Gdx.app.log("ServerResponse", "Received data: ");
+
+                String line;
+                while ((line = in.readLine()) != null) {
+                    System.out.println("Received raw message: [" + line + "]");
+
+                    if (line.startsWith("role ")) {
+                        String[] parts = line.split(" ");
+                        if (parts.length >= 3) {
+                            try {
+                                int playerId = Integer.parseInt(parts[1]);
+                                int isImposter = Integer.parseInt(parts[2]);
+
+                                System.out.println("You are Player " + playerId);
+                                System.out.println(isImposter == 1 ? "You are the Imposter!" : "You are a Crewmate.");
+
+                            } catch (NumberFormatException e) {
+                                System.err.println("Invalid number format in role message: " + line);
+                            }
+                        } else {
+                            System.err.println("Invalid role message format: " + line);
+                        }
+                    } else if (line.startsWith("start")) {
+                        System.out.println("Game has started!");
+                        gameStarted = true; // Call your render function
+                    } else {
+                        System.out.println("Unhandled message: " + line);
+                    }
+                }
+
+            } catch (IOException e) {
+                System.err.println("Connection error: " + e.getMessage());
+            }
+        }).start();
+
+
+
+
+
         // Prepare your screen here.
 
         stage = new Stage(new ScreenViewport());
 //        Gdx.input.setInputProcessor(stage);
         Texture BackgroundTexture = new Texture(Gdx.files.internal("progressbar.png"));
         Texture KnobTexture =  new Texture(Gdx.files.internal("progressbarknob.png"));
+
+        // Set music
+
+        music = Gdx.audio.newMusic(Gdx.files.internal("pingumusic.mp3"));
+        music.setLooping(true);
+        music.setVolume(200f);
+        music.play();
 
         ProgressBar.ProgressBarStyle Style = new ProgressBar.ProgressBarStyle();
         Style.background = new TextureRegionDrawable(BackgroundTexture);
@@ -156,7 +221,7 @@ public class FirstScreen implements Screen {
 
         //pingu array
         penguin = new Pingu[]{pingu1, pingu2, pingu3};
-        penguin[(int)(Math.random()*3)].isImpostor = true;
+//        penguin[(int)(Math.random()*3)].isImpostor = true;
 
         texture2 = new Texture("water.png");
         sprite = new Sprite(texture2);
@@ -227,12 +292,7 @@ public class FirstScreen implements Screen {
 
 
 
-        // Set music
 
-        music = Gdx.audio.newMusic(Gdx.files.internal("pingumusic.mp3"));
-        music.setLooping(true);
-        music.setVolume(200f);
-        music.play();
 
         //set map ice and red
         spriteBatch = new SpriteBatch();
@@ -316,13 +376,28 @@ public class FirstScreen implements Screen {
     }
 
     @Override
-    public void render(float delta)
-    {
-        // Draw your screen here. "delta" is the time since last render in seconds.
+    public void render(float delta) {
+        if (gameStarted) {
+            // Handle game start
+            System.out.println("Handling game start inside render loop!");
+
+            // Call your start logic
+            startGame();
+
+            // Reset the flag if you want it to trigger only once
+            gameStarted = false;
+        }
+
+        // Regular rendering
         input();
         logic();
         draw();
     }
+
+    private void startGame() {
+        System.out.println("Game setup done!");
+    }
+
 
     private void draw()
     {
@@ -367,35 +442,6 @@ public class FirstScreen implements Screen {
                 spriteBatch.draw(textureRegion, x, y, 1, 1);
             }
         }
-//               // if (isselected = true)
-//               {
-                    //draw button down
-////                  if (penguin[1].isImpostor)
-////                  {
-                            //win
-                            //game.switchToGameOverScreen(true);
-////                  }
-////                  if (penguin[2].isImpostor)
-////                  {
-                           //win
-////                      game.switchToGameOverScreen(true);
-////                  }
-////                  else
-////                  {
-                            //lose
-////                      game.switchToGameOverScreen(false);
-////                  }
-////                }
-//
-//                //if button is pressed by touch screen get button location and pingu is touched
-//                //if imposter win
-//                // else you lose
-//
-//
-            //}
-//        }
-
-
         spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
         spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
         //above for water tile
@@ -494,7 +540,7 @@ public class FirstScreen implements Screen {
 
             // If the touch position is that of the button
             if (touchPosition.x == 2 && touchPosition.y == 0) {
-                Gdx.app.log("BUTTON", "PRESSED!");
+                //Gdx.app.log("BUTTON", "PRESSED!");
                 int selectedPingu = -1;
                 for (int i = 0; i < 3; i++) {
                     if (penguin[i].isSelected) {
