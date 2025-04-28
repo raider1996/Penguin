@@ -39,10 +39,6 @@ import java.util.HashMap;
 
 
 //imposter does not go in water
-
-
-
-//render screen with server
 // show move players
 
 /** First screen of the application. Displayed after the application is created. */
@@ -167,7 +163,7 @@ public class FirstScreen implements Screen {
 
         music = Gdx.audio.newMusic(Gdx.files.internal("pingumusic.mp3"));
         music.setLooping(true);
-        music.setVolume(200f);
+        music.setVolume(900f);
         music.play();
 
         ProgressBar.ProgressBarStyle Style = new ProgressBar.ProgressBarStyle();
