@@ -15,12 +15,10 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -38,8 +36,10 @@ import java.util.HashMap;
 
 
 
-//imposter does not go in water
+
 // show move players
+//imposter does not go in water
+
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -86,7 +86,7 @@ public class FirstScreen implements Screen {
     ProgressBar progressBar;
     Button button;
 
-    Pingu[]penguin;
+    Pingu[] penguin;
 
     HashMap<Integer, ArrayList<Integer>> hashMap;
 
@@ -99,54 +99,88 @@ public class FirstScreen implements Screen {
     }
 
 
+    private void runThread() {
+
+        final String SERVER_IP = "152.105.66.105";  // Server IP
+        final int SERVER_PORT = 4302;
+
+        try (Socket clientSocket = new Socket(InetAddress.getByName(SERVER_IP), SERVER_PORT);
+             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+
+
+            System.out.println("Connected to server!");
+            //Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
+            Gdx.app.log("ServerResponse", "Received data: ");
+
+            String line;
+            while ((line = in.readLine()) != null) {
+                System.out.println("Received raw message: [" + line + "]");
+
+                if (line.startsWith("role ")) {
+                    String[] parts = line.split(" ");
+                    if (parts.length >= 5) {
+                        try {
+                            int playerId = Integer.parseInt(parts[1]);
+                            if (playerId >= 0 && playerId < penguin.length) {
+                                penguin[playerId].isImpostor = Integer.parseInt(parts[2]) == 1;
+                                penguin[playerId].x = Integer.parseInt(parts[3]) ;
+                                penguin[playerId].y = Integer.parseInt(parts[4]) +1;
+
+                                System.out.println("You are Player " + playerId);
+                                System.out.println(penguin[playerId].isImpostor ? "You are the Imposter!" : "You are a Crewmate.");
+                                System.out.println("Spawn Position:(" + penguin[playerId].x + "," + penguin[playerId].y + ")");
+                            } else {
+                                System.err.println("Invalid player ID received: " + playerId);
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid number format in role message: " + line);
+                        }
+
+                    } else {
+                        System.err.println("Invalid role message format: " + line);
+                    }
+                } else if(line.startsWith("map")){
+                    String[] parts = line.split(" ");
+                    if (parts.length == 5){
+                        try{
+                            waterTile1X = Integer.parseInt(parts[1]) - 1;
+                            waterTile1Y = Integer.parseInt(parts[2]) + 1;
+                            waterTile2X = Integer.parseInt(parts[3]) - 1;
+                            waterTile2Y = Integer.parseInt(parts[4]) + 1;
+
+                            System.out.println("Received water tiles:");
+                            System.out.println("Tile 1: ("+waterTile1X+","+waterTile1Y+")");
+                            System.out.println("Tile 2: ("+waterTile2X+","+waterTile2Y+")");
+
+                        }catch (NumberFormatException e){
+                            System.err.println("Invalid number format in map message:" + line);
+                        }
+                    }else{
+                        System.err.println("Invalid map message format: " + line);
+
+                    }
+                }
+
+                else if (line.startsWith("start")) {
+                    System.out.println("Game has started!");
+                    gameStarted = true; // Call your render function
+                } else {
+                    System.out.println("Unhandled message: " + line);
+                }
+            }
+
+        } catch (IOException e) {
+            System.err.println("Connection error: " + e.getMessage());
+        }
+    }
+
     @Override
     public void show()
     {   //server
 
-        final String SERVER_IP = "152.105.66.107";  // Server IP
-        final int SERVER_PORT = 4300;
-
-        new Thread(()-> {
-            try (Socket clientSocket = new Socket(InetAddress.getByName(SERVER_IP), SERVER_PORT);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
 
 
-                System.out.println("Connected to server!");
-                //Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
-                Gdx.app.log("ServerResponse", "Received data: ");
 
-                String line;
-                while ((line = in.readLine()) != null) {
-                    System.out.println("Received raw message: [" + line + "]");
-
-                    if (line.startsWith("role ")) {
-                        String[] parts = line.split(" ");
-                        if (parts.length >= 3) {
-                            try {
-                                int playerId = Integer.parseInt(parts[1]);
-                                int isImposter = Integer.parseInt(parts[2]);
-
-                                System.out.println("You are Player " + playerId);
-                                System.out.println(isImposter == 1 ? "You are the Imposter!" : "You are a Crewmate.");
-
-                            } catch (NumberFormatException e) {
-                                System.err.println("Invalid number format in role message: " + line);
-                            }
-                        } else {
-                            System.err.println("Invalid role message format: " + line);
-                        }
-                    } else if (line.startsWith("start")) {
-                        System.out.println("Game has started!");
-                        gameStarted = true; // Call your render function
-                    } else {
-                        System.out.println("Unhandled message: " + line);
-                    }
-                }
-
-            } catch (IOException e) {
-                System.err.println("Connection error: " + e.getMessage());
-            }
-        }).start();
 
 
 
@@ -177,7 +211,6 @@ public class FirstScreen implements Screen {
         progressBar.setValue(0);
 
         Table table = new Table();
-//        table.setFillParent(true);
         table.add(progressBar).width(652).height(134);
         table.setPosition(550.0F, 2150.0F);
         stage.addActor(table);
@@ -190,30 +223,29 @@ public class FirstScreen implements Screen {
         // >> use it for up and down
         bstyle.up = new TextureRegionDrawable(ButtonTexture);
         bstyle.down = new TextureRegionDrawable(ButtonPressTexture);
-        // new button
 
+        // new button
         button = new Button(bstyle);
         button.setPosition(365f, 10f);
         button.setSize(350,440);
         stage.addActor(button);
 
-        button.addListener(new ChangeListener()
-        {
-            @Override
-            public void changed(ChangeEvent event, Actor actor)
-            {
-                //
-            }
-        });
+//        button.addListener(new ChangeListener()
+//        {
+//            @Override
+//            public void changed(ChangeEvent event, Actor actor)
+//            {
+//                //
+//            }
+//        });
 
         // add button to stage
 
         // Local player will always be pingu1, penguin[0]
         // We may have different coordinates and different textures
-        Pingu pingu1 = new Pingu(1, 3,1, "pingured.png");
-//        Gdx.app.log("Show", pingu1.x + " " + pingu1.y);
-        Pingu pingu2 = new Pingu(3,3,2, "pinguyellow.png");
-        Pingu pingu3 = new Pingu(3,1,3,"pingupurple.png");
+        Pingu pingu1 = new Pingu(1, 3, "pingured.png");
+        Pingu pingu2 = new Pingu(3,3, "pinguyellow.png");
+        Pingu pingu3 = new Pingu(3,1,"pingupurple.png");
 
         //pingu array
         penguin = new Pingu[]{pingu1, pingu2, pingu3};
@@ -228,65 +260,6 @@ public class FirstScreen implements Screen {
         spriteB = new Sprite(textureB);
         textureRing = new Texture("circle.png");
         spriteRing = new Sprite(textureRing);
-
-        //random location but not 1,1
-        do
-        {
-            waterTile1X = (int)(Math.random()*3);
-            waterTile1Y = 1+(int)(Math.random()*3);
-        } while (waterTile1X == 1 && waterTile1Y == 1);
-
-      //water tile 2 logic random location not near first water
-
-        float distanceFromTile1;
-        do
-        {
-            waterTile2X = (int)(Math.random()*3);
-            waterTile2Y = 1+(int)(Math.random()*3);
-            distanceFromTile1 = ((waterTile2X - waterTile1X) * (waterTile2X - waterTile1X)) +
-                ((waterTile2Y - waterTile1Y) * (waterTile2Y - waterTile1Y));
-
-        } while(distanceFromTile1 <= 2);
-
-        //random pingu location not on the water or on each other
-
-        boolean conditionToPlaceCharacter;
-        do
-        {
-            pingu1.x = 1+(int)(Math.random()*3);
-            pingu1.y = 1+(int)(Math.random()*3);
-            conditionToPlaceCharacter =
-                (pingu1.x-1 != waterTile1X || pingu1.y != waterTile1Y) &&
-                    (pingu1.x-1 != waterTile2X || pingu1.y != waterTile2Y);
-            Gdx.app.log("Pingu1", pingu1.x + " " + pingu1.y);
-        } while (!conditionToPlaceCharacter);
-        // Not on waterTile1 and not on waterTile2
-
-        do
-        {
-            pingu2.x = 1+(int)(Math.random()*3);
-            pingu2.y = 1+(int)(Math.random()*3);
-            conditionToPlaceCharacter =
-                (pingu2.x-1 != waterTile1X || pingu2.y != waterTile1Y) &&
-                    (pingu2.x-1 != waterTile2X || pingu2.y != waterTile2Y) &&
-                    (pingu2.x != pingu1.x || pingu2.y != pingu1.y);
-
-        } while (!conditionToPlaceCharacter); // Not on waterTile1 and not on waterTile2 and not on pingu1
-
-
-        do
-        {
-            pingu3.x = 1+(int)(Math.random()*3);
-            pingu3.y = 1+(int)(Math.random()*3);
-            conditionToPlaceCharacter =
-                (pingu3.x - 1 != waterTile1X || pingu3.y != waterTile1Y) &&
-                    (pingu3.x - 1 != waterTile2X || pingu3.y != waterTile2Y) &&
-                    (pingu3.x != pingu1.x || pingu3.y != pingu1.y) &&
-                    (pingu3.x != pingu2.x || pingu3.y != pingu2.y);
-        } while (!conditionToPlaceCharacter); // Not on waterTile1 and not on waterTile2 and not on pingu1 and not on pingu2
-
-
-
 
 
 
@@ -369,6 +342,8 @@ public class FirstScreen implements Screen {
         x3y1al.add(22);
         x3y1al.add(32);
         hashMap.put(31, x3y1al);
+
+        new Thread(this::runThread).start();
     }
 
     @Override
@@ -411,42 +386,27 @@ public class FirstScreen implements Screen {
         // Based on pingu's position, get the arraylist
         // for all the elements in arraylist, paint the matching cell
         // Drawing the red tiles
-        if (isMovementActive)
-        {
-            int pingu_X = penguin[0].x;
-            int pingu_Y = penguin[0].y;
-//        Gdx.app.log("draw", pingu1.x * 10 + pingu1.y + "");
-            // TODO: Check the coordinates are valid
-            if (!hashMap.containsKey(pingu_X * 10 + pingu_Y))
-            {
-                Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
-            }
-            for (int coordinates : hashMap.get(pingu_X * 10 + pingu_Y))
-            {
-                int x = (coordinates / 10) - 1;
-                int y = coordinates % 10;
-                if (penguin[1].x == x + 1 && penguin[1].y == y)
-                {
+        if (isMovementActive && hashMap.containsKey(penguin[0].x * 10 + penguin[0].y)) {
+            for (int coord : hashMap.get(penguin[0].x * 10 + penguin[0].y)) {
+                int x = (coord / 10) - 1;
+                int y = coord % 10;
+                if ((penguin[1].x == x + 1 && penguin[1].y == y) || (penguin[2].x == x + 1 && penguin[2].y == y))
                     continue;
+                TiledMapTileLayer.Cell cell = layer.getCell(x, y - 1);
+                if (cell != null) {
+                    TextureRegion region = cell.getTile().getTextureRegion();
+                    spriteBatch.draw(region, x, y, 1, 1);
                 }
-                if (penguin[2].x == x + 1 && penguin[2].y == y)
-                {
-                    continue;
-                }
-                TiledMapTileLayer.Cell cell = layer.getCell(x, y - 1); // Removed 1
-                TextureRegion textureRegion = cell.getTile().getTextureRegion();
-                spriteBatch.draw(textureRegion, x, y, 1, 1);
             }
         }
-        spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
-        spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
-        //above for water tile
-
         spriteBatch.draw(textureT,0,4, 3, 1);
         spriteBatch.draw(textureB,0,0, 3, 1);
         spriteBatch.draw(penguin[0].sprite,penguin[0].x,penguin[0].y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(penguin[1].sprite,penguin[1].x,penguin[1].y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(penguin[2].sprite,penguin[2].x,penguin[2].y,0,0,8,8,0.1f,0.1f,90,true);
+        spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
+        spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
+
 
         for (int i = 0; i < 3; i++) {
             if (penguin[i].isSelected)

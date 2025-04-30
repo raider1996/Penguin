@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 
 public class Pingu {
-    public Pingu(int X, int Y,int ID, String texture) {
+    public Pingu(int X, int Y, String texture) {
         this(X, Y, texture, false);
     }
     public Pingu(int X, int Y, String texture, boolean isImpostor){
@@ -18,7 +18,7 @@ public class Pingu {
     public int y;
     public Sprite sprite;
     public Texture texture;
-    public int ID;
+    //public int ID;
     public boolean isImpostor;
     public boolean isSelected = false;
 }
