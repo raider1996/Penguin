@@ -28,17 +28,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-
-
-
-
-// show move players
-//imposter does not go in water
 
 
 /** First screen of the application. Displayed after the application is created. */
@@ -50,8 +44,6 @@ public class FirstScreen implements Screen {
 
     OrthogonalTiledMapRenderer renderer;
     OrthographicCamera camera;
-
-    //boolean isSelected = false;
 
     SpriteBatch spriteBatch;
     Viewport viewport;
@@ -80,7 +72,6 @@ public class FirstScreen implements Screen {
     int waterTile2Y;
 
     int counter;
-    float timeSinceLastMovement = 0;
 
     Stage stage;
     ProgressBar progressBar;
@@ -94,22 +85,24 @@ public class FirstScreen implements Screen {
 
     boolean gameStarted = false;
 
+    PrintWriter out;
+
     public FirstScreen(Main main) {
         game = main;
     }
 
 
     private void runThread() {
+        //server
 
         final String SERVER_IP = "152.105.66.105";  // Server IP
         final int SERVER_PORT = 4302;
 
         try (Socket clientSocket = new Socket(InetAddress.getByName(SERVER_IP), SERVER_PORT);
              BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-
+            out = new PrintWriter(clientSocket.getOutputStream(),true);
 
             System.out.println("Connected to server!");
-            //Gdx.app.log("draw", "pingu position invalid " + pingu_X + " " + pingu_Y);
             Gdx.app.log("ServerResponse", "Received data: ");
 
             String line;
@@ -123,8 +116,8 @@ public class FirstScreen implements Screen {
                             int playerId = Integer.parseInt(parts[1]);
                             if (playerId >= 0 && playerId < penguin.length) {
                                 penguin[playerId].isImpostor = Integer.parseInt(parts[2]) == 1;
-                                penguin[playerId].x = Integer.parseInt(parts[3]) ;
-                                penguin[playerId].y = Integer.parseInt(parts[4]) +1;
+                                penguin[playerId].x = Integer.parseInt(parts[3]);
+                                penguin[playerId].y = Integer.parseInt(parts[4]) + 1;
 
                                 System.out.println("You are Player " + playerId);
                                 System.out.println(penguin[playerId].isImpostor ? "You are the Imposter!" : "You are a Crewmate.");
@@ -139,57 +132,75 @@ public class FirstScreen implements Screen {
                     } else {
                         System.err.println("Invalid role message format: " + line);
                     }
-                } else if(line.startsWith("map")){
+                } else if (line.startsWith("map")) {
                     String[] parts = line.split(" ");
-                    if (parts.length == 5){
-                        try{
+                    if (parts.length == 5) {
+                        try {
                             waterTile1X = Integer.parseInt(parts[1]) - 1;
                             waterTile1Y = Integer.parseInt(parts[2]) + 1;
                             waterTile2X = Integer.parseInt(parts[3]) - 1;
                             waterTile2Y = Integer.parseInt(parts[4]) + 1;
 
                             System.out.println("Received water tiles:");
-                            System.out.println("Tile 1: ("+waterTile1X+","+waterTile1Y+")");
-                            System.out.println("Tile 2: ("+waterTile2X+","+waterTile2Y+")");
+                            System.out.println("Tile 1: (" + waterTile1X + "," + waterTile1Y + ")");
+                            System.out.println("Tile 2: (" + waterTile2X + "," + waterTile2Y + ")");
 
-                        }catch (NumberFormatException e){
+                        } catch (NumberFormatException e) {
                             System.err.println("Invalid number format in map message:" + line);
                         }
-                    }else{
+                    } else {
                         System.err.println("Invalid map message format: " + line);
 
                     }
-                }
-
-                else if (line.startsWith("start")) {
+                } else if (line.startsWith("start")) {
                     System.out.println("Game has started!");
-                    gameStarted = true; // Call your render function
-                } else {
-                    System.out.println("Unhandled message: " + line);
-                }
-            }
+                    gameStarted = true;
+                    //sendMoveCommand(out,2,3);// Call your render function
+                } else if (line.startsWith("move")) {
+                    String[] parts = line.split(" ");
+                    if (parts.length == 4) {
+                        try {
 
+                            int Playerid = Integer.parseInt(parts[1]);
+                            int x = Integer.parseInt(parts[2]);
+                            int y = Integer.parseInt(parts[3]);
+
+                            //update the player position based on move command
+                            if (Playerid >= 0 && Playerid < penguin.length) {
+                                penguin[Playerid].x = x;
+                                penguin[Playerid].y = y;
+                                System.out.println("Player " + Playerid + "moved to: (" + x + ", " + y + ")");
+                            }
+
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid number format in move message:" + line);
+                        }
+                    } else {
+                        System.out.println("Unhandled message: " + line);
+                    }
+                }
+
+            }
         } catch (IOException e) {
-            System.err.println("Connection error: " + e.getMessage());
+            throw new RuntimeException(e);
         }
+    }
+
+    //method to send player movement to the server
+    private void sendPlayerMoveToServer(int playerId, int x, int y) {
+        //construct the message to send
+        String moveMessage = "move " + playerId + " " + x + " " + y + "\n";
+
+        //send the message to the server
+        out.println(moveMessage);
+        System.out.println("Sent move command to server: " + moveMessage);
     }
 
     @Override
     public void show()
-    {   //server
-
-
-
-
-
-
-
-
-
-        // Prepare your screen here.
+    {// Prepare your screen here.
 
         stage = new Stage(new ScreenViewport());
-//        Gdx.input.setInputProcessor(stage);
         Texture BackgroundTexture = new Texture(Gdx.files.internal("progressbar.png"));
         Texture KnobTexture =  new Texture(Gdx.files.internal("progressbarknob.png"));
 
@@ -197,7 +208,7 @@ public class FirstScreen implements Screen {
 
         music = Gdx.audio.newMusic(Gdx.files.internal("pingumusic.mp3"));
         music.setLooping(true);
-        music.setVolume(900f);
+        music.setVolume(0.9f);
         music.play();
 
         ProgressBar.ProgressBarStyle Style = new ProgressBar.ProgressBarStyle();
@@ -230,15 +241,6 @@ public class FirstScreen implements Screen {
         button.setSize(350,440);
         stage.addActor(button);
 
-//        button.addListener(new ChangeListener()
-//        {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor)
-//            {
-//                //
-//            }
-//        });
-
         // add button to stage
 
         // Local player will always be pingu1, penguin[0]
@@ -249,7 +251,6 @@ public class FirstScreen implements Screen {
 
         //pingu array
         penguin = new Pingu[]{pingu1, pingu2, pingu3};
-//        penguin[(int)(Math.random()*3)].isImpostor = true;
 
         texture2 = new Texture("water.png");
         sprite = new Sprite(texture2);
@@ -265,7 +266,6 @@ public class FirstScreen implements Screen {
 
         //set map ice and red
         spriteBatch = new SpriteBatch();
-//        viewport = new StretchViewport(3,3);
         viewport = new FitViewport(3,5);
         // Try things:
         // 1. Extend the world dimensions to add a bottom and top row
@@ -365,6 +365,7 @@ public class FirstScreen implements Screen {
         draw();
     }
 
+
     private void startGame() {
         System.out.println("Game setup done!");
     }
@@ -401,11 +402,12 @@ public class FirstScreen implements Screen {
         }
         spriteBatch.draw(textureT,0,4, 3, 1);
         spriteBatch.draw(textureB,0,0, 3, 1);
+        spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
+        spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
         spriteBatch.draw(penguin[0].sprite,penguin[0].x,penguin[0].y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(penguin[1].sprite,penguin[1].x,penguin[1].y,0,0,8,8,0.1f,0.1f,90,true);
         spriteBatch.draw(penguin[2].sprite,penguin[2].x,penguin[2].y,0,0,8,8,0.1f,0.1f,90,true);
-        spriteBatch.draw(sprite.getTexture(), waterTile1X, waterTile1Y,1,1);
-        spriteBatch.draw(sprite.getTexture(), waterTile2X, waterTile2Y,1,1);
+
 
 
         for (int i = 0; i < 3; i++) {
@@ -429,9 +431,10 @@ public class FirstScreen implements Screen {
         }
 
         stage.act(Gdx.graphics.getDeltaTime());
-//        progressBar.setValue(100f);
         stage.draw();
     }
+
+
 
     private void logic()
     {
@@ -439,8 +442,7 @@ public class FirstScreen implements Screen {
         int pingu_Y = penguin[0].y;
 
         // Keep track of deltatime since lastmove
-        timeSinceLastMovement += Gdx.graphics.getDeltaTime();
-//
+        float timeSinceLastMovement = Gdx.graphics.getDeltaTime();
 
 
         if (isTouched && isMovementActive)
@@ -462,20 +464,22 @@ public class FirstScreen implements Screen {
                 penguin[0].x = (touchPosition.x);
                 penguin[0].y = (touchPosition.y)+1;
 
+                ////send the new position to c++ server
+                sendPlayerMoveToServer (penguin[0].playerId ,penguin[0].x,penguin[0].y);
+
                 //add to progress bar is touched under 2 seconds
                 //reset the timer
                 if (timeSinceLastMovement < 2.0 && counter < 20)
                 {
                     counter++;
                 }
-                timeSinceLastMovement = 0;
             }
 
             // get the arraylist that matches the position
             // if tile is within arraylist, then paint it red
             // else paint it blue
 
-        }
+       // }
         if (!isMovementActive && isTouched && !penguin[0].isImpostor)
         {
             // Unselect all the pingus
@@ -496,12 +500,10 @@ public class FirstScreen implements Screen {
 
             // If the touch position is that of the button
             if (touchPosition.x == 2 && touchPosition.y == 0) {
-                //Gdx.app.log("BUTTON", "PRESSED!");
                 int selectedPingu = -1;
                 for (int i = 0; i < 3; i++) {
                     if (penguin[i].isSelected) {
                         selectedPingu = i;
-//                        break;
                     }
                 }
                 if (selectedPingu != -1) {
@@ -511,15 +513,17 @@ public class FirstScreen implements Screen {
 
             // youWon = selectedPingu.isimpostor
             // switch to game over with the boolean
-//            if ()
 
         }
 
 
     }
+}
 
-    private void input()
-    {
+
+
+    private void input() {
+
         if (Gdx.input.isTouched())
         {
             Gdx.app.log("input", Gdx.input.getX() + " " + Gdx.input.getY());
@@ -531,6 +535,7 @@ public class FirstScreen implements Screen {
             isTouched = false;
         }
     }
+
 
     /*
     1,2 2,2 3,2

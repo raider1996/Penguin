@@ -18,7 +18,7 @@ public class Pingu {
     public int y;
     public Sprite sprite;
     public Texture texture;
-    //public int ID;
+    public int playerId;
     public boolean isImpostor;
     public boolean isSelected = false;
 }
