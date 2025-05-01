@@ -169,7 +169,7 @@ public class FirstScreen implements Screen {
                             if (Playerid >= 0 && Playerid < penguin.length) {
                                 penguin[Playerid].x = x;
                                 penguin[Playerid].y = y;
-                                System.out.println("Player " + Playerid + "moved to: (" + x + ", " + y + ")");
+                                System.out.println("Player " + Playerid + " moved to: (" + x + ", " + y + ")");
                             }
 
                         } catch (NumberFormatException e) {
@@ -449,7 +449,9 @@ public class FirstScreen implements Screen {
         {
             // Can I move there?
             // Add
-            if (hashMap.get(10 * pingu_X + pingu_Y).contains(touchPosition.x * 10 + touchPosition.y + 1))
+            //if (hashMap.get(10 * pingu_X + pingu_Y).contains(touchPosition.x * 10 + touchPosition.y + 1))
+            ArrayList<Integer> possibleMoves = hashMap.get(10 * pingu_X + pingu_Y);
+            if (possibleMoves !=null && possibleMoves.contains(touchPosition.x *10 + touchPosition.y +1))
             {
                 if (touchPosition.x == penguin[1].x && touchPosition.y == penguin[1].y - 1)
                 {
